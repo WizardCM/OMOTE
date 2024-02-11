@@ -19,12 +19,14 @@
 #include "device_appleTV/device_appleTV.h"
 #include "device_keyboard_mqtt/device_keyboard_mqtt.h"
 #include "device_keyboard_ble/device_keyboard_ble.h"
+#include "device_denonAvr/device_denonAvr.h"
 // gui and keys
 #include "gui_general_and_keys/guiBase.h"
 #include "gui_general_and_keys/guiRegistry.h"
 #include "gui_general_and_keys/gui_irReceiver.h"
 #include "gui_general_and_keys/gui_settings.h"
 #include "gui_general_and_keys/gui_numpad.h"
+#include "gui_general_and_keys/gui_tvcontrol.h"
 #include "device_appleTV/gui_appleTV.h"
 #include "device_smarthome/gui_smarthome.h"
 #include "gui_general_and_keys/keys.h"
@@ -33,6 +35,7 @@
 #include "scenes/scene_TV.h"
 #include "scenes/scene_fireTV.h"
 #include "scenes/scene_chromecast.h"
+#include "scenes/scene_denonAvr.h"
 #include "scenes/sceneHandler.h"
 // misc
 #include "preferencesStorage.h"
@@ -73,14 +76,16 @@ void setup() {
   #ifdef ENABLE_KEYBOARD_BLE
   register_device_keyboard_ble();
   #endif
+  register_device_denon();
   register_specialCommands();
 
-  // register the GUIs. They will be displayed in the order they have been registered.
-  register_gui_irReceiver();
-  register_gui_settings();
-  register_gui_numpad();
-  register_gui_appleTV();
+  // register the GUIs. They will be displayed in the order they are registered.
+  register_gui_tvcontrol();
   register_gui_smarthome();
+  register_gui_numpad();
+  register_gui_settings();
+  register_gui_irReceiver();
+  // register_gui_appleTV();
   // init GUI
   init_gui();
   gui_loop(); // Run the LVGL UI once before the loop takes over
@@ -88,8 +93,9 @@ void setup() {
   // register the scenes
   register_scene_allOff();
   register_scene_TV();
-  register_scene_fireTV();
-  register_scene_chromecast();
+  // register_scene_fireTV();
+  // register_scene_chromecast();
+  register_scene_denonAvr();
   setLabelCurrentScene();
 
   // init WiFi - needs to be after gui because WifiLabel must be available
@@ -140,4 +146,5 @@ void loop() {
     doLogMemoryUsage();
   }
 
+  // reconnectMQTT();
 }

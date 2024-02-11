@@ -2,33 +2,48 @@
 #include <lvgl.h>
 #include "gui_general_and_keys/guiBase.h"
 #include "gui_general_and_keys/guiRegistry.h"
+#include "gui_general_and_keys/gui_reusable.h"
 #include "hardware/tft.h"
 #include "device_smarthome/device_smarthome.h"
 #include "device_smarthome/gui_smarthome.h"
 #include "commandHandler.h"
+#include "scenes/sceneHandler.h"
+#include "scenes/scene_TV.h"
 
 // LVGL declarations
 LV_IMG_DECLARE(lightbulb);
 
-static lv_obj_t* lightToggleA;
-static lv_obj_t* lightToggleB;
-static lv_obj_t* sliderA;
-static lv_obj_t* sliderB;
-
-static bool lightToggleAstate = false;
-static bool lightToggleBstate = false;
-static int32_t sliderAvalue = 0;
-static int32_t sliderBvalue = 0;
+// static lv_obj_t* lightToggleA;
+// static lv_obj_t* lightToggleB;
+// static lv_obj_t* sliderA;
+// static lv_obj_t* sliderB;
+//
+// static bool lightToggleAstate = false;
+// static bool lightToggleBstate = false;
+// static int32_t sliderAvalue = 0;
+// static int32_t sliderBvalue = 0;
 
 // Smart Home Toggle Event handler
-static void smartHomeToggle_event_cb(lv_event_t* e){
-  std::string payload;
-  if (lv_obj_has_state(lv_event_get_target(e), LV_STATE_CHECKED)) payload = "true";
-  else payload = "false";
-  // Publish an MQTT message based on the event user data  
+static void smartHomeToggle_event_cb(lv_event_t * e){
+  lv_obj_t *target = lv_event_get_target(e);
+  Serial.println("Toggle hit");
+  bool checked = lv_obj_has_state(target, LV_STATE_CHECKED);
+  // Publish an MQTT message based on the event user data
   #if ENABLE_WIFI_AND_MQTT == 1
-  if((int)e->user_data == 1) executeCommand(SMARTHOME_MQTT_BULB1_SET, payload);
-  if((int)e->user_data == 2) executeCommand(SMARTHOME_MQTT_BULB2_SET, payload);
+  char *cmd = (char *)e->user_data;
+  Serial.print("User data read:");
+  Serial.println(cmd);
+  std::string command(cmd);
+  Serial.println("Sending command");
+  if (command.compare(SMARTHOME_MQTT_VRSENSORS_POWER) == 0) {
+    Serial.println(command.c_str());
+    executeCommand(command, checked ? "on" : "off");
+    return;
+  } else if (command.compare(SMARTHOME_MQTT_BLINDSCOUCH_TOGGLE) == 0) {
+    Serial.println(command.c_str());
+    executeCommand(command, checked ? "open" : "close");
+    return;
+  }
   #endif
 }
 
@@ -38,14 +53,88 @@ static void smartHomeSlider_event_cb(lv_event_t* e){
   char payload[8];
   dtostrf(lv_slider_get_value(slider), 1, 2, payload);
   std::string payload_str(payload);
+  char *cmd = (char *)e->user_data;
+  std::string command(cmd);
   // Publish an MQTT message based on the event user data
   #if ENABLE_WIFI_AND_MQTT == 1
-  if((int)e->user_data == 1) executeCommand(SMARTHOME_MQTT_BULB1_BRIGHTNESS_SET, payload);
-  if((int)e->user_data == 2) executeCommand(SMARTHOME_MQTT_BULB2_BRIGHTNESS_SET, payload);
+  if (command.compare(SMARTHOME_MQTT_BLINDSWINDOW_SETPOS) == 0) {
+     executeCommand(command, payload);
+     return;
+  }
   #endif
 }
 
+static void smartHomePanel_event_cb(lv_event_t *e) {
+  lv_obj_t *target = lv_event_get_target(e);
+  // send corrensponding number
+  if (currentScene == scene_name_TV) {
+    char *cmd = (char *)target->user_data;
+    std::string command(cmd);
+  #if ENABLE_WIFI_AND_MQTT == 1
+    if (command.rfind("AIRCON_MODE_", 0) == 0) {
+      std::string cmdVal(command);
+      cmdVal.replace(0, 12, "");
+      executeCommand(SMARTHOME_MQTT_AIRCON_SETMODE, cmdVal);
+      return;
+    } else if (command.rfind("AIRCON_FAN_", 0) == 0) {
+      std::string cmdVal(command);
+      cmdVal.replace(0, 11, "");
+      executeCommand(SMARTHOME_MQTT_AIRCON_SETFAN, cmdVal);
+      return;
+    }
+  #endif
+    executeCommand(command);
+  }
+}
+
 void create_tab_content_smarthome(lv_obj_t* tab) {
+  lv_obj_set_layout(tab, LV_LAYOUT_FLEX);
+  lv_obj_set_flex_flow(tab, LV_FLEX_FLOW_COLUMN);
+  lv_obj_set_scrollbar_mode(tab, LV_SCROLLBAR_MODE_ACTIVE);
+
+  lv_obj_t *wrapper;
+
+  wrapper = add_ui_container("Air Conditioner", 83, tab);
+
+  int aQuarter = 47;
+  int buttonHeight = 30;
+  int buttonSpacing = 2;
+
+  int btn1x = -9;
+  int btn2x = btn1x + aQuarter + buttonSpacing;
+  int btn3x = btn1x + (aQuarter * 2) + (buttonSpacing * 2);
+  int btn4x = btn1x + (aQuarter * 3) + (buttonSpacing * 3);
+
+  int btnY = -9;
+
+  add_ui_button("Heat", aQuarter, buttonHeight, btn1x, btnY, (void *)"AIRCON_MODE_heat", wrapper, smartHomePanel_event_cb);
+  add_ui_button("Cool", aQuarter, buttonHeight, btn2x, btnY, (void *)"AIRCON_MODE_cool", wrapper, smartHomePanel_event_cb);
+  add_ui_button("Fan",  aQuarter, buttonHeight, btn3x, btnY, (void *)"AIRCON_MODE_fan_only", wrapper, smartHomePanel_event_cb);
+  add_ui_button("Off",  aQuarter, buttonHeight, btn4x, btnY, (void *)"AIRCON_MODE_off", wrapper, smartHomePanel_event_cb);
+
+  int btnY2 = 30;
+
+  add_ui_button("Quiet", aQuarter, buttonHeight, btn1x, btnY2, (void *)"AIRCON_FAN_Silent", wrapper, smartHomePanel_event_cb);
+  add_ui_button("Low",   aQuarter, buttonHeight, btn2x, btnY2, (void *)"AIRCON_FAN_low", wrapper, smartHomePanel_event_cb);
+  add_ui_button("Med",   aQuarter, buttonHeight, btn3x, btnY2, (void *)"AIRCON_FAN_medium", wrapper, smartHomePanel_event_cb);
+  add_ui_button("High",  aQuarter, buttonHeight, btn4x, btnY2, (void *)"AIRCON_FAN_high", wrapper, smartHomePanel_event_cb);
+
+  add_ui_toggle("VR Sensors", 0, 0, false, (void *)SMARTHOME_MQTT_VRSENSORS_POWER, true, tab, smartHomeToggle_event_cb);
+
+  wrapper = add_ui_container("Blinds", 72, tab);
+
+  add_ui_toggle("Couch", -2, -7, true, (void *)SMARTHOME_MQTT_BLINDSCOUCH_TOGGLE, false, wrapper, smartHomeToggle_event_cb);
+
+  lv_obj_t *heading = lv_label_create(wrapper);
+  int windowY = 26;
+  lv_label_set_text(heading, "Window");
+  lv_obj_set_x(heading, -2);
+  lv_obj_set_y(heading, 26 + -4);
+
+  add_ui_slider(lv_pct(60), 32, windowY, 0, 100, 100, (void *)SMARTHOME_MQTT_BLINDSWINDOW_SETPOS, wrapper, smartHomeSlider_event_cb);
+}
+
+/*void create_tab_content_smarthome2(lv_obj_t* tab) {
 
   // Add content to the smart home tab
   lv_obj_set_layout(tab, LV_LAYOUT_FLEX);
@@ -145,15 +234,15 @@ void create_tab_content_smarthome(lv_obj_t* tab) {
   lv_obj_set_style_bg_color(menuBox, color_primary, LV_PART_MAIN);
   lv_obj_set_style_border_width(menuBox, 0, LV_PART_MAIN);
 
-}
+}*/
 
 void notify_tab_before_delete_smarthome(void) {
   // remember to set all pointers to lvgl objects to NULL if they might be accessed from outside.
   // They must check if object is NULL and must not use it if so
-  lightToggleAstate = lv_obj_has_state(lightToggleA, LV_STATE_CHECKED);
-  lightToggleBstate = lv_obj_has_state(lightToggleB, LV_STATE_CHECKED);
-  sliderAvalue = lv_slider_get_value(sliderA);
-  sliderBvalue = lv_slider_get_value(sliderB);
+  // lightToggleAstate = lv_obj_has_state(lightToggleA, LV_STATE_CHECKED);
+  // lightToggleBstate = lv_obj_has_state(lightToggleB, LV_STATE_CHECKED);
+  // sliderAvalue = lv_slider_get_value(sliderA);
+  // sliderBvalue = lv_slider_get_value(sliderB);
 }
 
 void register_gui_smarthome(void){

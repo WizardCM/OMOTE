@@ -1,12 +1,14 @@
 #include <map>
 #include <string>
 #include "device_samsungTV/device_samsungTV.h"
+#include "device_denonAvr/device_denonAvr.h"
 #include "device_yamahaAmp/device_yamahaAmp.h"
 #include "scenes/sceneRegistry.h"
 #include "scenes/scene_allOff.h"
 #include "scenes/scene_TV.h"
 #include "scenes/scene_fireTV.h"
 #include "scenes/scene_chromecast.h"
+#include "scenes/scene_denonAvr.h"
 #include "commandHandler.h"
 
 std::map<char, repeatModes> key_repeatModes_default {
@@ -19,25 +21,24 @@ std::map<char, repeatModes> key_repeatModes_default {
   {'b', SHORT         },                                                                      {'s', SHORT         },
   {'+', SHORT_REPEATED},                        {'m', SHORT         },                        {'^', SHORT         },
   {'-', SHORT_REPEATED},                        {'e', SHORT         },                        {'v', SHORT         },
-  {'1', SHORT         },          {'2', SHORT         },       {'3', SHORT          },        {'4', SHORT         },
+  {'1', SHORT         },          {'2', SHORT         },       {'3', SHORT          },        {'4', SHORTorLONG         },
 };
 
 std::map<char, std::string> key_commands_short_default {
                                                                                                {'o', SCENE_ALLOFF},
-/*{'=', COMMAND_UNKNOWN},*/     /*{'<', COMMAND_UNKNOWN},*/  /*{'p', COMMAND_UNKNOWN},*/     /*{'>', COMMAND_UNKNOWN},*/
+{'=', SPECIAL_TV_MACRO},     {'<', SPECIAL_VR_MACRO},  {'p', SPECIAL_XBOX_MACRO},     /*{'>', COMMAND_UNKNOWN},*/
 /*{'c', COMMAND_UNKNOWN},  */                                                                /*{'i', COMMAND_UNKNOWN},*/
                                               /*{'u', COMMAND_UNKNOWN},*/
                   /*{'l', COMMAND_UNKNOWN},*/ /*{'k', COMMAND_UNKNOWN},*/ /*{'r', COMMAND_UNKNOWN},*/
                                               /*{'d', COMMAND_UNKNOWN},*/
 /* {'b', COMMAND_UNKNOWN},*/                                                                 /*{'s', COMMAND_UNKNOWN},*/
-  {'+', YAMAHA_VOL_PLUS},                       {'m', YAMAHA_MUTE_TOGGLE},                   /*{'^', COMMAND_UNKNOWN},*/
-  {'-', YAMAHA_VOL_MINUS},                    /*{'e', COMMAND_UNKNOWN},*/                    /*{'v', COMMAND_UNKNOWN},*/
-  {'1', SCENE_TV},                {'2', SCENE_FIRETV},         {'3', SCENE_CHROMECAST},        {'4', YAMAHA_STANDARD},
+  {'+', SAMSUNG_VOL_PLUS},                       {'m', SAMSUNG_APPS},                   /*{'^', COMMAND_UNKNOWN},*/
+  {'-', SAMSUNG_VOL_MINUS},                    {'e', SAMSUNG_MUTE_TOGGLE},                    /*{'v', COMMAND_UNKNOWN},*/
+  {'1', DENON_SOUNDMODE_MOVIE},                {'2', DENON_SOUNDMODE_MUSIC},         {'3', SAMSUNG_GUIDE},        {'4', DENON_POWER_TOGGLE},
 };
 
 std::map<char, std::string> key_commands_long_default {
-
-
+  {'4', SPECIAL_SCENE_TOGGLE}
 };
 
 // https://stackoverflow.com/questions/840501/how-do-function-pointers-in-c-work
@@ -146,12 +147,12 @@ std::string get_command_long(std::string sceneName, char keyChar) {
     if ((registered_scenes.count(sceneName) > 0) && (registered_scenes.at(sceneName).this_key_commands_long->count(keyChar) > 0)) {
       Serial.printf("get_command_long: will use key from scene %s\r\n", sceneName.c_str());
       return registered_scenes.at(sceneName).this_key_commands_long->at(keyChar);
-    
+
     // look if there is a default definition
     } else if (key_commands_long_default.count(keyChar) > 0) {
       Serial.printf("get_command_long: will use default key\r\n");
       return key_commands_long_default.at(keyChar);
-    
+
     // no key definition found
     } else {
       Serial.printf("get_command_long: WARNING no key definition found\r\n");

@@ -91,6 +91,11 @@
 // #pragma message "3 The value is: " XSTR(KEYBOARD_UP)
 
 #define MY_SPECIAL_COMMAND           "My_special_command"
+#define SPECIAL_TV_MACRO              "Special_tv_macro"
+#define SPECIAL_VR_MACRO              "Special_vr_macro"
+#define SPECIAL_XBOX_MACRO            "Special_xbox_macro"
+#define SPECIAL_SCENE_TOGGLE           "Special_scene_toggle"
+#define SPECIAL_MQTT_TEST             "Special_mqtt_test"
 
 enum commandHandlers {
   SPECIAL,

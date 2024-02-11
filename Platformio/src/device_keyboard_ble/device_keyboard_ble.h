@@ -4,7 +4,7 @@
 // Advertising is started automatically.
 // As soon as a device is connected, a small indicator in the top left corner of the screen will appear
 
-#define ENABLE_KEYBOARD_BLE // Comment out to disable BLE
+// #define ENABLE_KEYBOARD_BLE // Comment out to disable BLE
 
 #ifdef ENABLE_KEYBOARD_BLE
 

@@ -44,6 +44,18 @@ void init_mqtt(void) {
   WiFi.onEvent(WiFiEvent);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   WiFi.setSleep(true);
+  mqttClient.setServer(MQTT_SERVER, MQTT_SERVER_PORT); // MQTT initialization
+  mqttClient.setCallback(onMQTTEvent);
+}
+
+bool connectMQTT() {
+  if (mqttClient.connect(MQTT_CLIENTNAME, MQTT_USER, MQTT_PASS)) {
+    subscribeMQTTEvent("omote");
+    Serial.printf("  Successfully connected to MQTT broker\r\n");
+  } else {
+    Serial.printf("  MQTT connection failed (but WiFi is available). Will try later ...\r\n");
+  }
+  return mqttClient.connected();
 }
 
 bool checkMQTTconnection() {
@@ -53,20 +65,37 @@ bool checkMQTTconnection() {
       return true;
     } else {
       // try to connect to mqtt server
-      mqttClient.setServer(MQTT_SERVER, MQTT_SERVER_PORT); // MQTT initialization
-      if (mqttClient.connect(MQTT_CLIENTNAME, MQTT_USER, MQTT_PASS)) {
-        Serial.printf("  Successfully connected to MQTT broker\r\n");
-    
-      } else {
-        Serial.printf("  MQTT connection failed (but WiFi is available). Will try later ...\r\n");
-
-      }
-      return mqttClient.connected();
+      return connectMQTT();
     }
   } else {
     Serial.printf("  No connection to MQTT server, because WiFi ist not connected.\r\n");
     return false;
-  }  
+  }
+}
+
+void reconnectMQTT() {
+  int maxAttempts = 5;
+  int attempt = 1;
+  if (mqttClient.connected())
+    return;
+
+  while (!mqttClient.connected() && attempt < maxAttempts) {
+    if (connectMQTT()) {
+      Serial.println("Connected");
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(mqttClient.state());
+      Serial.println(" try again in 5 seconds");
+      attempt++;
+      delay(5000);
+    }
+  }
+}
+
+void disconnectMQTT() {
+  if (mqttClient.connected()) {
+    mqttClient.disconnect();
+  }
 }
 
 bool publishMQTTMessage(const char *topic, const char *payload){
@@ -86,4 +115,42 @@ bool publishMQTTMessage(const char *topic, const char *payload){
   }
   return false;
 }
+
+bool subscribeMQTTEvent(const char* topic) {
+  if (!mqttClient.connected()) {
+    Serial.println("Could not subscribe to MQTT event, MQTT client is not connected");
+    return false;
+  }
+  if (mqttClient.subscribe(topic)) {
+    Serial.print("Successfully subscribed to event ");
+    Serial.println(topic);
+    return true;
+  } else {
+    Serial.println("Subscribe failed");
+  }
+  return false;
+}
+
+bool unsubscribeMQTTEvent(const char* topic) {
+  if (mqttClient.connected()) {
+    if (mqttClient.unsubscribe(topic)) {
+      return true;
+    } else {
+      Serial.println("Unsubscribe failed");
+    }
+  } else {
+    Serial.printf("  Cannot unsubscribe mqtt message, because checkMQTTconnection failed (WiFi or mqtt is not connected)\r\n");
+  }
+  return false;
+}
+
+void onMQTTEvent(const char topic[], byte* payload, unsigned int length) {
+  Serial.print(topic);
+  Serial.print(" with value: ");
+  for (uint16_t i = 0; i < sizeof(payload); ++i){
+    Serial.print((char)payload[i]);
+    Serial.println();
+  }
+}
+
 #endif

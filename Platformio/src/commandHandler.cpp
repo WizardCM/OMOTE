@@ -4,8 +4,12 @@
 #include "hardware/mqtt.h"
 #include "device_samsungTV/device_samsungTV.h"
 #include "device_yamahaAmp/device_yamahaAmp.h"
+#include "device_denonAvr/device_denonAvr.h"
 #include "device_keyboard_mqtt/device_keyboard_mqtt.h"
 #include "device_keyboard_ble/device_keyboard_ble.h"
+#include "device_smarthome/device_smarthome.h"
+#include "scenes/scene_TV.h"
+#include "scenes/scene_denonAvr.h"
 #include "commandHandler.h"
 #include "scenes/sceneHandler.h"
 
@@ -19,7 +23,11 @@ commandData makeCommandData(commandHandlers a, std::list<std::string> b) {
 void register_specialCommands() {
   // put SPECIAL commands here if you want
   commands[MY_SPECIAL_COMMAND] = makeCommandData(SPECIAL, {""});
-
+  commands[SPECIAL_TV_MACRO] = makeCommandData(SPECIAL, {""});
+  commands[SPECIAL_VR_MACRO] = makeCommandData(SPECIAL, {""});
+  commands[SPECIAL_XBOX_MACRO] = makeCommandData(SPECIAL, {""});
+  commands[SPECIAL_SCENE_TOGGLE] = makeCommandData(SPECIAL, {""});
+  commands[SPECIAL_MQTT_TEST] = makeCommandData(SPECIAL, {""});
 }
 
 void executeCommandWithData(std::string command, commandData commandData, std::string additionalPayload = "") {
@@ -165,6 +173,39 @@ void executeCommandWithData(std::string command, commandData commandData, std::s
     }
     
     case SPECIAL: {
+      std::string payload = "power";
+      if (command == SPECIAL_TV_MACRO) {
+        executeCommand(SCENE_TV);
+        delay(400);
+        executeCommand(DENON_INPUT_TV);
+      } else if (command == SPECIAL_VR_MACRO) {
+        executeCommand(SCENE_TV);
+        delay(1000);
+        executeCommand(SMARTHOME_MQTT_VRPC_WAKE, payload);
+        // delay(300);
+        // executeCommand(DENON_INPUT_MEDIAPLAYER);
+        // delay(300);
+        // executeCommand(SAMSUNG_HDMI);
+      } else if (command == SPECIAL_XBOX_MACRO) {
+        executeCommand(SCENE_TV);
+        delay(200);
+        executeCommand(SMARTHOME_MQTT_XBOX_POWERON, payload);
+        delay(300);
+        executeCommand(DENON_INPUT_GAME);
+        delay(300);
+        executeCommand(SAMSUNG_HDMI);
+      } else if (command == SPECIAL_SCENE_TOGGLE) {
+        if (currentScene == scene_name_TV) {
+          executeCommand(SCENE_DENONAVR);
+        } else if (currentScene == scene_name_denonAvr) {
+          executeCommand(SCENE_TV);
+        }
+      } else if (command == SPECIAL_MQTT_TEST) {
+        // TODO
+      } else {
+        Serial.println("Special command requested but unrecognised.");
+      }
+
       if (command == MY_SPECIAL_COMMAND) {
         // do your special command here
         Serial.printf("execute: could execute a special command here, if you define one\r\n");
