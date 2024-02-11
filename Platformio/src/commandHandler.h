@@ -2,7 +2,7 @@
 #define __COMMANDHANDLER_H__
 
 #define ENABLE_WIFI_AND_MQTT // Comment out to disable WiFi
-#define ENABLE_BLUETOOTH     // Comment out to disable Bluetooth
+// #define ENABLE_BLUETOOTH     // Comment out to disable Bluetooth
 
 #include <Arduino.h>
 #include <string>
@@ -94,6 +94,10 @@
 // #pragma message "3 The value is: " XSTR(KEYBOARD_UP)
 
 #define MY_SPECIAL_COMMAND           "My_special_command"
+#define SPECIAL_TV_MACRO              "Special_tv_macro"
+#define SPECIAL_VR_MACRO              "Special_vr_macro"
+#define SPECIAL_XBOX_MACRO            "Special_xbox_macro"
+#define SPECIAL_SCENE_TOGGLE           "Special_scene_toggle"
 
 enum commandHandlers {
   SPECIAL,
