@@ -110,6 +110,8 @@ void enterSleep(){
 
   #ifdef ENABLE_WIFI_AND_MQTT
   // Power down modem
+  unsubscribeMQTTEvent("omote");
+  disconnectMQTT();
   WiFi.disconnect();
   WiFi.mode(WIFI_OFF);
   #endif

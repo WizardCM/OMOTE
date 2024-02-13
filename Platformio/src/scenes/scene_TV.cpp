@@ -27,7 +27,7 @@ std::map<char, repeatModes> key_repeatModes_TV {
 std::map<char, std::string> key_commands_short_TV {
 
   /* {'=', SAMSUNG_REWIND}, */      /* {'<', "DENON_INPUT_MEDIAPLAYER"},        {'p', "DENON_INPUT_GAME"}, */            {'>', DENON_INPUT_HEOS},
-  {'c', SAMSUNG_INFO},                                                                        {'i', "SAMSUNG_KEYPAD"},
+  {'c', "SAMSUNG_KEYPAD"},                                                                        {'i', SAMSUNG_INFO},
                                                 {'u', SAMSUNG_UP},
                     {'l', SAMSUNG_LEFT},        {'k', SAMSUNG_SELECT},      {'r', SAMSUNG_RIGHT},
                                                 {'d', SAMSUNG_DOWN},
@@ -44,6 +44,8 @@ std::map<char, std::string> key_commands_long_TV {
 
 void scene_start_sequence_TV(void) {
   std::string payload = "on";
+  executeCommand(SAMSUNG_POWER_ON);
+  delay(300);
   executeCommand(SMARTHOME_MQTT_TV_POWERON, payload);
   // delay(500);
   // executeCommand(YAMAHA_POWER_ON);

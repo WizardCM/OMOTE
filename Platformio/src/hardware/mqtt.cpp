@@ -16,7 +16,7 @@ void WiFiEvent(WiFiEvent_t event){
     // connection to MQTT server will be done in checkMQTTconnection()
     // mqttClient.setServer(MQTT_SERVER, 1883); // MQTT initialization
     // mqttClient.connect("OMOTE"); // Connect using a client id
-
+    checkMQTTconnection();
   }
 
   // Set status bar icon based on WiFi status
@@ -53,9 +53,11 @@ bool checkMQTTconnection() {
     } else {
       // try to connect to mqtt server
       mqttClient.setServer(MQTT_SERVER, MQTT_SERVER_PORT); // MQTT initialization
+      mqttClient.setCallback(onMQTTEvent);
+      // unsubscribeMQTTEvent("omote");
       if (mqttClient.connect(MQTT_CLIENTNAME, MQTT_USER, MQTT_PASS)) {
         Serial.printf("  Successfully connected to MQTT broker\r\n");
-    
+        subscribeMQTTEvent("omote");
       } else {
         Serial.printf("  MQTT connection failed (but WiFi is available). Will try later ...\r\n");
 
@@ -85,4 +87,48 @@ bool publishMQTTMessage(const char *topic, const char *payload){
   }
   return false;
 }
+
+void disconnectMQTT() {
+  if (mqttClient.connected()) {
+    mqttClient.disconnect();
+  }
+}
+
+bool subscribeMQTTEvent(const char* topic) {
+  if (checkMQTTconnection()) {
+    if (mqttClient.subscribe(topic)) {
+      Serial.print("Successfully subscribed to event ");
+      Serial.println(topic);
+      return true;
+    } else {
+      Serial.println("Subscribe failed");
+    }
+  } else {
+    Serial.printf("  Cannot subscribe mqtt message, because checkMQTTconnection failed (WiFi or mqtt is not connected)\r\n");
+  }
+  return false;
+}
+
+bool unsubscribeMQTTEvent(const char* topic) {
+  if (mqttClient.connected()) {
+    if (mqttClient.unsubscribe(topic)) {
+      return true;
+    } else {
+      Serial.println("Unsubscribe failed");
+    }
+  } else {
+    Serial.printf("  Cannot unsubscribe mqtt message, because checkMQTTconnection failed (WiFi or mqtt is not connected)\r\n");
+  }
+  return false;
+}
+
+void onMQTTEvent(const char topic[], byte* payload, unsigned int length) {
+  Serial.print(topic);
+  Serial.print(" with value: ");
+  for (uint16_t i = 0; i < sizeof(payload); ++i){
+    Serial.print((char)payload[i]);
+    Serial.println();
+  }
+}
+
 #endif
