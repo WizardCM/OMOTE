@@ -97,9 +97,7 @@ void setup() {
   init_mqtt();
   #endif
 
-  Serial.print("Setup finished in ");
-  Serial.print(millis());
-  Serial.println("ms.");
+  Serial.printf("Setup finished in %lu ms.\r\n", millis());
 }
 
 // Loop ------------------------------------------------------------------------------------------------------------------------------------
